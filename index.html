@@ -356,29 +356,120 @@
         }
 
         function renderSettings() {
-             const settingsContent = document.getElementById('settings-content');
-             settingsContent.innerHTML = `
-                <h1 class="text-3xl font-bold text-slate-900 mb-6">Pengaturan</h1>
-                <div class="space-y-8">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h2 class="text-xl font-bold mb-4">Informasi Sekolah</h2>
-                        <form id="school-info-form" class="space-y-4">
-                            </form>
+    const settingsContent = document.getElementById('settings-content');
+    if (!settingsContent) return;
+    
+    const schoolInfo = state.schoolInfo || { name: '', address: '', logo: '' };
+
+    settingsContent.innerHTML = `
+        <h1 class="text-3xl font-bold text-slate-900 mb-6">Pengaturan</h1>
+        <div class="space-y-8">
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Informasi Sekolah</h2>
+                <form id="school-info-form" class="space-y-4">
+                    <div>
+                        <label for="school-name-input" class="block text-sm font-medium">Nama Sekolah</label>
+                        <input type="text" id="school-name-input" value="${schoolInfo.name}" class="w-full p-2 border rounded-lg mt-1">
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h2 class="text-xl font-bold mb-4">Kelola Kelas</h2>
-                            <form id="add-class-form"></form>
-                            <div id="classes-list-settings" class="space-y-2"></div>
+                    <div>
+                        <label for="school-address-input" class="block text-sm font-medium">Alamat Sekolah</label>
+                        <input type="text" id="school-address-input" value="${schoolInfo.address}" class="w-full p-2 border rounded-lg mt-1">
+                    </div>
+                    <div>
+                        <label for="school-logo-input" class="block text-sm font-medium">URL Logo Sekolah</label>
+                        <input type="url" id="school-logo-input" value="${schoolInfo.logo}" placeholder="https://example.com/logo.png" class="w-full p-2 border rounded-lg mt-1">
+                    </div>
+                    <div class="flex justify-end items-center gap-4">
+                        <span id="school-info-save-status" class="text-sm text-green-600"></span>
+                        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Simpan Informasi</button>
+                    </div>
+                </form>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-4">Kelola Kelas</h2>
+                    <form id="add-class-form" class="flex gap-2 mb-4">
+                        <input type="text" id="new-class-name" placeholder="Nama Kelas Baru" required class="flex-1 p-2 border rounded-lg">
+                        <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition">+</button>
+                    </form>
+                    <div id="classes-list-settings" class="space-y-2"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-4">Kelola Siswa</h2>
+                    <div class="mb-4">
+                        <label for="class-select-for-students" class="block text-sm font-medium">Pilih Kelas:</label>
+                        <select id="class-select-for-students" class="w-full p-2 border rounded-lg mt-1"></select>
+                    </div>
+                    <div id="students-management-area" class="hidden opacity-0">
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h2 class="text-xl font-bold mb-4">Kelola Siswa</h2>
-                            </div>
-                    </div>
-                </div>`;
-            attachSettingsListeners();
-            renderAllSettings();
-        }
+                </div>
+            </div>
+        </div>
+    `;
+    // PENTING: Panggil fungsi untuk memasang listener dan merender list
+    attachSettingsListeners();
+            function attachSettingsListeners() {
+    // Listener untuk form informasi sekolah
+    const schoolForm = document.getElementById('school-info-form');
+    if (schoolForm) {
+        schoolForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            state.schoolInfo.name = document.getElementById('school-name-input').value;
+            state.schoolInfo.address = document.getElementById('school-address-input').value;
+            state.schoolInfo.logo = document.getElementById('school-logo-input').value;
+            saveData(); // Menggunakan saveData() untuk Firebase
+
+            const statusEl = document.getElementById('school-info-save-status');
+            statusEl.textContent = 'Berhasil disimpan!';
+            setTimeout(() => { statusEl.textContent = '' }, 3000);
+        });
+    }
+
+    // Listener untuk form tambah kelas
+    const addClassForm = document.getElementById('add-class-form');
+    if(addClassForm) {
+        addClassForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newClassNameInput = document.getElementById('new-class-name');
+            const className = newClassNameInput.value.trim();
+            if (className) {
+                const newId = 'cls' + Date.now();
+                if (!state.classes) state.classes = [];
+                state.classes.push({ id: newId, name: className });
+                saveData();
+                newClassNameInput.value = '';
+                renderAllSettings();
+            }
+        });
+    }
+    
+    // Listener untuk tombol di daftar kelas (edit, hapus)
+    const classesList = document.getElementById('classes-list-settings');
+    if(classesList) {
+        classesList.addEventListener('click', (e) => {
+            // ... (logika untuk edit dan hapus kelas)
+        });
+    }
+
+    // Listener untuk dropdown pilih kelas
+    const classSelect = document.getElementById('class-select-for-students');
+    if(classSelect) {
+        classSelect.addEventListener('change', () => {
+            const selectedClassId = classSelect.value;
+            const studentsManagementArea = document.getElementById('students-management-area');
+            if (selectedClassId) {
+                studentsManagementArea.classList.remove('hidden');
+                studentsManagementArea.style.opacity = 1;
+                renderStudentsForClass(selectedClassId); // Panggil fungsi untuk render siswa
+            } else {
+                studentsManagementArea.classList.add('hidden');
+                studentsManagementArea.style.opacity = 0;
+            }
+        });
+    }
+}
+    renderAllSettings();
+}
 
         function renderReports() {
             // ... (Fungsi renderReports lengkap dari file kedua)
@@ -409,3 +500,4 @@
     </script>
 </body>
 </html>
+
